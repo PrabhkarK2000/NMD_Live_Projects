@@ -1,0 +1,58 @@
+import pandas as pd
+import sqlite3
+from pathlib import Path
+
+def csv_to_sql_dump(csv_file_path: str, output_sql_file_path: str, table_name: str):
+    # Reads a CSV file and creates a SQL dump of the data into a file.
+    conn = None  
+    try:
+        # Read the CSV file into a DataFrame
+        df = pd.read_csv(csv_file_path)
+        
+        # Connect to an in-memory SQLite database
+        conn = sqlite3.connect(":memory:")
+        
+        # Save the DataFrame into the SQLite database table
+        df.to_sql(table_name, conn, if_exists="replace", index=False)
+        
+        # Write SQL dump to the output file
+        with open(output_sql_file_path, "w") as f:
+            for line in conn.iterdump():
+                f.write(f"{line}\n")
+        
+        print(f"SQL dump has been written to {output_sql_file_path}")
+    
+    except Exception as e:
+        print(f"An error occurred while processing {csv_file_path}: {e}")
+    
+    finally:
+        if conn:
+            conn.close()
+
+def process_csv_files(file_mappings: dict, output_dir: str):
+    """
+    Processes multiple CSV files and creates SQL dump files for each.
+    """
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)  # Ensure output directory exists
+
+    for table_name, csv_file_path in file_mappings.items():
+        output_sql_file_path = output_dir / f"{table_name}_dump.sql"
+        print(f"Processing {csv_file_path} for table {table_name}...")
+        csv_to_sql_dump(csv_file_path, str(output_sql_file_path), table_name)
+
+# Define file mappings and output directory
+file_mappings = {
+    "Branch_Data": r"C:\Users\Lenovo\OneDrive\Desktop\NMD Data Analytics\Live Project\branches.csv",
+    "accounts_data": r"C:\Users\Lenovo\OneDrive\Desktop\NMD Data Analytics\Live Project\accountsdata.csv",
+    "customer_data": r"C:\Users\Lenovo\OneDrive\Desktop\NMD Data Analytics\Live Project\customersdata.csv",
+    "kyc_data": r"C:\Users\Lenovo\OneDrive\Desktop\NMD Data Analytics\Live Project\kyc.csv",
+    "payments_data": r"C:\Users\Lenovo\OneDrive\Desktop\NMD Data Analytics\Live Project\payments.csv",
+    "loans_data": r"C:\Users\Lenovo\OneDrive\Desktop\NMD Data Analytics\Live Project\loans1.csv",
+    "transactions_data": r"C:\Users\Lenovo\OneDrive\Desktop\NMD Data Analytics\Live Project\transactionsdata.csv"
+}
+
+output_dir = r"C:\Users\Lenovo\OneDrive\Desktop\NMD Data Analytics\DumpFiles"
+
+# Process all files
+process_csv_files(file_mappings, output_dir)
